@@ -59,6 +59,7 @@ class listener implements EventSubscriberInterface
 	{
 		return array(
 			'core.user_setup'					=> 'load_user_data',
+			'core.acp_board_config_edit_add'	=> 'acp_board_settings',
 			'core.ucp_prefs_view_data'			=> 'add_user_prefs',
 			'core.ucp_prefs_view_update_data'	=> 'update_user_prefs',
 			'core.viewforum_get_topic_ids_data'	=> 'update_viewforum_sql_ary',
@@ -86,6 +87,39 @@ class listener implements EventSubscriberInterface
 	}
 
 	/**
+	* Set ACP board settings
+	*
+	* @param object $event The event object
+	* @return null
+	* @access public
+	*/
+	public function acp_board_settings($event)
+	{
+		if ($event['mode'] == 'post')
+		{
+			$new_display_var = array(
+				'title'	=> $event['display_vars']['title'],
+				'vars'	=> array(),
+			);
+
+			foreach ($event['display_vars']['vars'] as $key => $content)
+			{
+				$new_display_var['vars'][$key] = $content;
+				if ($key == 'posts_per_page')
+				{
+					$new_display_var['vars']['lockatend_user_enable'] = array(
+						'lang'		=> 'LOCK_AT_END_ENABLE',
+						'validate'	=> 'bool',
+						'type'		=> 'radio:yes_no',
+						'explain' 	=> true,
+					);
+				}
+			}
+			$event->offsetSet('display_vars', $new_display_var);
+		}
+	}
+
+	/**
 	* Add the necessay variables
 	*
 	* @param object $event The event object
@@ -94,16 +128,20 @@ class listener implements EventSubscriberInterface
 	*/
 	public function add_user_prefs($event)
 	{
-		$data = $event['data'];
+		if ($this->config['lockatend_user_enable'])
+		{
+			$data = $event['data'];
 
-		$data = array_merge($data, array(
-			'lock_at_end' => $this->request->variable('lock_at_end', (!empty($user->data['user_lock_at_end'])) ? $user->data['user_lock_at_end'] : 0),
-		));
+			$data = array_merge($data, array(
+				'lock_at_end' => $this->request->variable('lock_at_end', (!empty($user->data['user_lock_at_end'])) ? $user->data['user_lock_at_end'] : 0),
+			));
 
-		$event->offsetSet('data', $data);
+			$event->offsetSet('data', $data);
+		}
 
 		$this->template->assign_vars(array(
 			'S_LOCK_AT_END'	=> $this->user->data['user_lock_at_end'],
+			'S_USER_ENABLE' => $this->config['lockatend_user_enable'],
 		));
 	}
 
@@ -116,14 +154,17 @@ class listener implements EventSubscriberInterface
 	*/
 	public function update_user_prefs($event)
 	{
-		$sql_ary	= $event['sql_ary'];
-		$data		= $event['data'];
+		if ($this->config['lockatend_user_enable'])
+		{
+			$sql_ary	= $event['sql_ary'];
+			$data		= $event['data'];
 
-		$sql_ary = array_merge($sql_ary, array(
-			'user_lock_at_end'	=> $data['lock_at_end'],
-		));
+			$sql_ary = array_merge($sql_ary, array(
+				'user_lock_at_end'	=> $data['lock_at_end'],
+			));
 
-		$event->offsetSet('sql_ary', $sql_ary);
+			$event->offsetSet('sql_ary', $sql_ary);
+		}
 	}
 
 	/**
@@ -135,7 +176,7 @@ class listener implements EventSubscriberInterface
 	*/
 	public function update_viewforum_sql_ary($event)
 	{
-		if ($this->user->data['user_lock_at_end'])
+		if (($this->config['lockatend_user_enable'] && $this->user->data['user_lock_at_end']) || !$this->config['lockatend_user_enable'])
 		{
 			$sql_ary			= $event['sql_ary'];
 			$store_reverse		= $event['store_reverse'];
@@ -153,7 +194,7 @@ class listener implements EventSubscriberInterface
 	*/
 	public function update_mcp_sql_ary($event)
 	{
-		if ($this->user->data['user_lock_at_end'])
+		if (($this->config['lockatend_user_enable'] && $this->user->data['user_lock_at_end']) || !$this->config['lockatend_user_enable'])
 		{
 			$sql			= $event['sql'];
 			$event['sql']	= str_replace('t.topic_last_post_time', 't.topic_status ASC, t.topic_last_post_time', $sql);

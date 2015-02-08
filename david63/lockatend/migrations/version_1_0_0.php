@@ -14,6 +14,7 @@ class version_1_0_0 extends \phpbb\db\migration\migration
 	public function update_data()
 	{
 		return array(
+			array('config.add', array('lockatend_user_enable', '1')),
 			array('config.add', array('lockatend_version', '1.0.0')),
 		);
 	}
