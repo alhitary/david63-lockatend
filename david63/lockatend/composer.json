@@ -3,7 +3,7 @@
 	"type": "phpbb-extension",
 	"description": "This extension will place any locked topics at the end of the forums topic list, also works in the MCP.",
 	"homepage": "",
-	"version": "1.0.0-b1",
+	"version": "1.0.0-b2",
 	"time": "2015-02-07",
 		"keywords": ["phpbb", "extension", "topic", "locked"],
 	"license": "GPL-2.0",

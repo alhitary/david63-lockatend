@@ -1,5 +1,10 @@
 services:
     david63.lockatend.listener:
         class: david63\lockatend\event\listener
+        arguments:
+            - @config
+            - @request
+            - @template
+            - @user
         tags:
             - { name: event.listener }
